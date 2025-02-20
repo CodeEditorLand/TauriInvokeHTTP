@@ -1,12 +1,12 @@
 {
+	"name": "app",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"tauri": "tauri"
+	},
 	"dependencies": {
 		"@codeeditorland/cli": "0.0.1"
 	},
-	"description": "",
-	"devDependencies": {},
-	"main": "index.js",
-	"name": "app",
-	"scripts": {
-		"tauri": "tauri"
-	}
+	"devDependencies": {}
 }

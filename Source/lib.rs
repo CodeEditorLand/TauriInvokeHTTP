@@ -8,26 +8,15 @@ use std::{
 	sync::{Arc, Mutex},
 };
 
-use tauri::{
-	AppHandle,
-	InvokePayload,
-	InvokeResponder,
-	InvokeResponse,
-	Manager,
-	Runtime,
-	api::ipc::CallbackFn,
-};
+use tauri::{AppHandle, InvokePayload, InvokeResponder, InvokeResponse, Manager, Runtime, api::ipc::CallbackFn};
 use tiny_http::{Header, Method, Request, Response};
 
-fn cors<R:std::io::Read>(request:&Request, r:&mut Response<R>, allowed_origins:&[String]) {
+fn cors<R: std::io::Read>(request: &Request, r: &mut Response<R>, allowed_origins: &[String]) {
 	if allowed_origins.iter().any(|s| s == "*") {
 		r.add_header(Header::from_str("Access-Control-Allow-Origin: *").unwrap());
 	} else if let Some(origin) = request.headers().iter().find(|h| h.field.equiv("Origin")) {
 		if allowed_origins.iter().any(|o| o == &origin.value) {
-			r.add_header(
-				Header::from_str(&format!("Access-Control-Allow-Origin: {}", origin.value))
-					.unwrap(),
-			);
+			r.add_header(Header::from_str(&format!("Access-Control-Allow-Origin: {}", origin.value)).unwrap());
 		}
 	}
 
@@ -37,25 +26,25 @@ fn cors<R:std::io::Read>(request:&Request, r:&mut Response<R>, allowed_origins:&
 }
 
 pub struct Invoke {
-	allowed_origins:Vec<String>,
-	port:u16,
-	requests:Arc<Mutex<HashMap<usize, Request>>>,
+	allowed_origins: Vec<String>,
+	port: u16,
+	requests: Arc<Mutex<HashMap<usize, Request>>>,
 }
 
 impl Invoke {
-	pub fn new<I:Into<String>, O:IntoIterator<Item = I>>(allowed_origins:O) -> Self {
+	pub fn new<I: Into<String>, O: IntoIterator<Item = I>>(allowed_origins: O) -> Self {
 		let port = portpicker::pick_unused_port().expect("failed to get unused port for invoke");
 
 		let requests = Arc::new(Mutex::new(HashMap::new()));
 
 		Self {
-			allowed_origins:allowed_origins.into_iter().map(|o| o.into()).collect(),
+			allowed_origins: allowed_origins.into_iter().map(|o| o.into()).collect(),
 			port,
 			requests,
 		}
 	}
 
-	pub fn start<R:Runtime>(&self, app:AppHandle<R>) {
+	pub fn start<R: Runtime>(&self, app: AppHandle<R>) {
 		let server = tiny_http::Server::http(format!("localhost:{}", self.port)).unwrap();
 
 		let requests = self.requests.clone();
@@ -88,7 +77,7 @@ impl Invoke {
 						.map(|h| h.value.to_string())
 						.unwrap_or_else(|| "application/json".into());
 
-					let payload:InvokePayload = if content_type == "application/json" {
+					let payload: InvokePayload = if content_type == "application/json" {
 						let mut content = String::new();
 
 						request.as_reader().read_to_string(&mut content).unwrap();
@@ -114,17 +103,17 @@ impl Invoke {
 		});
 	}
 
-	pub fn responder<R:Runtime>(&self) -> Box<InvokeResponder<R>> {
+	pub fn responder<R: Runtime>(&self) -> Box<InvokeResponder<R>> {
 		let requests = self.requests.clone();
 
 		let allowed_origins = self.allowed_origins.clone();
 
-		let responder = move |_window, response:InvokeResponse, callback:CallbackFn, _error| {
+		let responder = move |_window, response: InvokeResponse, callback: CallbackFn, _error| {
 			let request = requests.lock().unwrap().remove(&callback.0).unwrap();
 
 			let response = response.into_result();
 
-			let status:u16 = if response.is_ok() { 200 } else { 400 };
+			let status: u16 = if response.is_ok() { 200 } else { 400 };
 
 			let mut r = Response::from_string(
 				serde_json::to_string(&match response {

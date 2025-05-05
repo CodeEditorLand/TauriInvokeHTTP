@@ -1,0 +1,11 @@
+{
+  "extends": ["config:recommended"],
+  "baseBranches": ["v2", "dev"],
+  "rangeStrategy": "replace",
+  "packageRules": [
+    {
+      "semanticCommitType": "chore",
+      "matchPackageNames": ["*"]
+    }
+  ]
+}
